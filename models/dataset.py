@@ -55,6 +55,11 @@ class Dataset:
         self.images_lis = sorted(glob(os.path.join(self.data_dir, 'image/*.png')))
         self.n_images = len(self.images_lis)
         self.images_np = np.stack([cv.imread(im_name) for im_name in self.images_lis]) / 255.0
+        if not os.path.exists(os.path.join(self.data_dir, 'mask')):
+            os.makedirs(os.path.join(self.data_dir, 'mask'), exist_ok=True)
+            images_np = np.stack([cv.imread(im_name, cv.IMREAD_UNCHANGED) for im_name in self.images_lis])
+            for idx, img_file in enumerate(self.images_lis):
+                cv.imwrite(img_file.replace("/image/", "/mask/"), images_np[idx, :, :, -1])
         self.masks_lis = sorted(glob(os.path.join(self.data_dir, 'mask/*.png')))
         self.masks_np = np.stack([cv.imread(im_name) for im_name in self.masks_lis]) / 255.0
         self.weighted_masks_np = self.generate_mask_wt()
