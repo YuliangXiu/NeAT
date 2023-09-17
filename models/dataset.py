@@ -77,9 +77,9 @@ class Dataset:
             self.intrinsics_all.append(torch.from_numpy(intrinsics).float())
             self.pose_all.append(torch.from_numpy(pose).float())
 
-        self.images = torch.from_numpy(self.images_np.astype(np.float32)).cpu()  # [n_images, H, W, 3]
-        self.masks = torch.from_numpy(self.masks_np.astype(np.float32)).cpu()   # [n_images, H, W, 3]
-        self.weighted_masks = torch.from_numpy(self.weighted_masks_np).cpu().unsqueeze(-1)   # [n_images, H, W, 1]
+        self.images = torch.from_numpy(self.images_np.astype(np.float32)).to(self.device)  # [n_images, H, W, 3]
+        self.masks = torch.from_numpy(self.masks_np.astype(np.float32)).to(self.device)   # [n_images, H, W, 3]
+        self.weighted_masks = torch.from_numpy(self.weighted_masks_np).to(self.device).unsqueeze(-1)   # [n_images, H, W, 1]
         self.intrinsics_all = torch.stack(self.intrinsics_all).to(self.device)   # [n_images, 4, 4]
         self.intrinsics_all_inv = torch.inverse(self.intrinsics_all)  # [n_images, 4, 4]
         self.focal = self.intrinsics_all[0][0, 0]
@@ -155,7 +155,7 @@ class Dataset:
         rays_v = p / torch.linalg.norm(p, ord=2, dim=-1, keepdim=True)    # batch_size, 3
         rays_v = torch.matmul(self.pose_all[img_idx, :3, :3], rays_v[:, :, None]).squeeze()  # batch_size, 3
         rays_o = self.pose_all[img_idx, :3, 3].expand(rays_v.shape)  # batch_size, 3
-        return torch.cat([rays_o.cpu(), rays_v.cpu(), color, mask[:, :1], weighted_mask[:, :1]], dim=-1).to(self.device)
+        return torch.cat([rays_o.to(self.device), rays_v.to(self.device), color, mask[:, :1], weighted_mask[:, :1]], dim=-1).to(self.device)
 
     def gen_random_rays_at(self, img_idx, batch_size):
         """
@@ -171,7 +171,7 @@ class Dataset:
         rays_v = p / torch.linalg.norm(p, ord=2, dim=-1, keepdim=True)    # batch_size, 3
         rays_v = torch.matmul(self.pose_all[img_idx, None, :3, :3], rays_v[:, :, None]).squeeze()  # batch_size, 3
         rays_o = self.pose_all[img_idx, None, :3, 3].expand(rays_v.shape)  # batch_size, 3
-        return torch.cat([rays_o.cpu(), rays_v.cpu(), color, mask[:, :1], weighted_mask[:, :1]], dim=-1).to(self.device)
+        return torch.cat([rays_o, rays_v, color, mask[:, :1], weighted_mask[:, :1]], dim=-1).to(self.device)
 
     def near_far_from_sphere(self, rays_o, rays_d):
         a = torch.sum(rays_d**2, dim=-1, keepdim=True)
