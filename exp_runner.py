@@ -474,4 +474,5 @@ if __name__ == '__main__':
     elif args.mode == 'validate_mesh':
         runner.validate_mesh(world_space=args.is_world_space, resolution=args.res, threshold=args.mcube_threshold)
     elif args.mode == 'validate_image':
-        runner.validate_image(idx=args.img_idx, resolution_level=1)
+        for idx in range(200):
+            runner.validate_image(idx=idx, resolution_level=1)
