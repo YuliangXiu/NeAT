@@ -344,10 +344,11 @@ class Runner:
         torch.save(checkpoint, os.path.join(self.base_exp_dir, 'checkpoints', 'ckpt_{:0>6d}.pth'.format(self.iter_step)))
 
     def validate_image(self, idx=-1, resolution_level=-1):
+        
         if idx < 0:
             idx = np.random.randint(self.dataset.n_images)
 
-        print('Validate: iter: {}, camera: {}'.format(self.iter_step, idx))
+        logging.info('Validate: iter: {}, camera: {}'.format(self.iter_step, idx))
 
         if resolution_level < 0:
             resolution_level = self.validate_resolution_level
@@ -420,6 +421,7 @@ class Runner:
                            normal_img[..., i])
 
     def validate_mesh(self, world_space=False, resolution=64, threshold=0.0):
+        
         bound_min = torch.tensor(self.dataset.object_bbox_min, dtype=torch.float32)
         bound_max = torch.tensor(self.dataset.object_bbox_max, dtype=torch.float32)
         os.makedirs(os.path.join(self.base_exp_dir, 'meshes'), exist_ok=True)
@@ -438,6 +440,7 @@ class Runner:
             self.renderer.extract_geometry(bound_min, bound_max, resolution=resolution, threshold=threshold,
                 query_func=lambda pts: -self.renderer.sdf_network.sdf(pts))
         vertices, triangles = remove_nan_from_mesh(vertices, triangles)
+        
         if len(vertices) > 0:
             if world_space:
                 vertices = vertices * self.dataset.scale_mats_np[0][0, 0] + self.dataset.scale_mats_np[0][:3, 3][None]
@@ -474,5 +477,5 @@ if __name__ == '__main__':
     elif args.mode == 'validate_mesh':
         runner.validate_mesh(world_space=args.is_world_space, resolution=args.res, threshold=args.mcube_threshold)
     elif args.mode == 'validate_image':
-        for idx in range(200):
+        for idx in range(100,200):
             runner.validate_image(idx=idx, resolution_level=1)
