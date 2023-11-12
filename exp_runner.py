@@ -21,7 +21,7 @@ from models.renderer import NeATRenderer
 
 
 class Runner:
-    def __init__(self, 
+    def __init__(self,
                  conf_path,
                  mode='train',
                  case='CASE_NAME',
@@ -60,8 +60,8 @@ class Runner:
         self.thin_shell_reg_end = self.conf.get_float('train.thin_shell_reg_end', default=1e5)
         self.anneal_end = self.conf.get_float('train.anneal_end', default=0.0)
         self.change_sigmoid_factor = self.conf.get_int('train.change_sigmoid_factor', default=0)
-        # use_weighted_mask: 
-        # 0: don't use weighted mask; 
+        # use_weighted_mask:
+        # 0: don't use weighted mask;
         # 1: use occ/free as weighted mask;
         # 2: add sensitive region
         self.use_weighted_mask = self.conf.get_int('train.use_weighted_mask', default=1)
@@ -192,7 +192,7 @@ class Runner:
 
             sivp = torch.sqrt(self.renderer.sdf_is_valid_pred.clip(1e-6, 1-1e-6))
             bce_reg = torch.mean(-sivp * torch.log(sivp) - (1.0 - sivp) * torch.log(1.0 - sivp))
-            
+
             loss = color_fine_loss +\
                    eikonal_loss * self.igr_weight +\
                    mask_loss * self.mask_weight +\
@@ -301,7 +301,7 @@ class Runner:
                 g['lr'] = self.learning_rate_validity + (self.learning_rate_sdf - self.learning_rate_validity) * progress
             if writer is not None:
                 writer.add_scalar('Lr/validity', self.learning_rate_validity + (self.learning_rate_sdf - self.learning_rate_validity) * progress, self.iter_step)
-    
+
     def file_backup(self):
         dir_lis = self.conf['general.recording']
         os.makedirs(os.path.join(self.base_exp_dir, 'recording'), exist_ok=True)
@@ -344,7 +344,7 @@ class Runner:
         torch.save(checkpoint, os.path.join(self.base_exp_dir, 'checkpoints', 'ckpt_{:0>6d}.pth'.format(self.iter_step)))
 
     def validate_image(self, idx=-1, resolution_level=-1):
-        
+
         if idx < 0:
             idx = np.random.randint(self.dataset.n_images)
 
@@ -389,39 +389,46 @@ class Runner:
 
         img_fine = None
         if len(out_rgb_fine) > 0:
-            img_fine = (np.concatenate(out_rgb_fine, axis=0).reshape([H, W, 3, -1]) * 255).clip(0, 255)
-            mask_fine = (np.concatenate(out_mask_fine, axis=0).reshape([H, W, 1, -1]) * 255).clip(0, 255)
+            img_fine = (np.concatenate(out_rgb_fine, axis=0).reshape([H, W, 3]) * 255).clip(0, 255)
+            mask_fine = (np.concatenate(out_mask_fine, axis=0).reshape([H, W, 1]) * 255).clip(0, 255)
 
-        normal_img = None
-        if len(out_normal_fine) > 0:
-            normal_img = np.concatenate(out_normal_fine, axis=0)
-            rot = np.linalg.inv(self.dataset.pose_all[idx, :3, :3].detach().cpu().numpy())
-            normal_img = (np.matmul(rot[None, :, :], normal_img[:, :, None])
-                          .reshape([H, W, 3, -1]) * 128 + 128).clip(0, 255)
+        # normal_img = None
+        # if len(out_normal_fine) > 0:
+        #     normal_img = np.concatenate(out_normal_fine, axis=0)
+        #     rot = np.linalg.inv(self.dataset.pose_all[idx, :3, :3].detach().cpu().numpy())
+        #     normal_img = (np.matmul(rot[None, :, :], normal_img[:, :, None])
+        #                   .reshape([H, W, 3, -1]) * 128 + 128).clip(0, 255)
 
-        os.makedirs(os.path.join(self.base_exp_dir, 'validations_fine'), exist_ok=True)
-        os.makedirs(os.path.join(self.base_exp_dir, 'normals'), exist_ok=True)
+        # os.makedirs(os.path.join(self.base_exp_dir, 'validations_fine'), exist_ok=True)
+        # os.makedirs(os.path.join(self.base_exp_dir, 'normals'), exist_ok=True)
 
-        for i in range(img_fine.shape[-1]):
-            if len(out_rgb_fine) > 0:
-                cv.imwrite(os.path.join(self.base_exp_dir,
-                                        'validations_fine',
-                                        '{:0>8d}_{}_{}.png'.format(self.iter_step, i, idx)),
-                           np.concatenate([img_fine[..., i],
-                                           self.dataset.image_at(idx, resolution_level=resolution_level)]))
-                cv.imwrite(os.path.join(self.base_exp_dir,
-                                        'validations_fine',
-                                        '{:0>8d}_{}_{}_mask.png'.format(self.iter_step, i, idx)),
-                           np.concatenate([mask_fine[..., 0, i],
-                                           self.dataset.image_at(idx, resolution_level=resolution_level)[:,:,0]]))
-            if len(out_normal_fine) > 0:
-                cv.imwrite(os.path.join(self.base_exp_dir,
-                                        'normals',
-                                        '{:0>8d}_{}_{}.png'.format(self.iter_step, i, idx)),
-                           normal_img[..., i])
+        os.makedirs(os.path.join(self.base_exp_dir, 'novel_view'), exist_ok=True)
+        cv.imwrite(os.path.join(self.base_exp_dir, 'novel_view',
+                                'pred_{}.png'.format(idx)), np.concatenate([img_fine,mask_fine],axis=-1))
+        cv.imwrite(os.path.join(self.base_exp_dir, 'novel_view',
+                                'gt_{}.png'.format(idx)),
+                    self.dataset.image_at(idx, resolution_level=resolution_level))
 
-    def validate_mesh(self, world_space=False, resolution=64, threshold=0.0):
-        
+        # for i in range(img_fine.shape[-1]):
+        #     if len(out_rgb_fine) > 0:
+        #         cv.imwrite(os.path.join(self.base_exp_dir,
+        #                                 'validations_fine',
+        #                                 '{:0>8d}_{}_{}.png'.format(self.iter_step, i, idx)),
+        #                    np.concatenate([img_fine[..., i],
+        #                                    self.dataset.image_at(idx, resolution_level=resolution_level)]))
+        #         cv.imwrite(os.path.join(self.base_exp_dir,
+        #                                 'validations_fine',
+        #                                 '{:0>8d}_{}_{}_mask.png'.format(self.iter_step, i, idx)),
+        #                    np.concatenate([mask_fine[..., 0, i],
+        #                                    self.dataset.image_at(idx, resolution_level=resolution_level)[:,:,0]]))
+        #     if len(out_normal_fine) > 0:
+        #         cv.imwrite(os.path.join(self.base_exp_dir,
+        #                                 'normals',
+        #                                 '{:0>8d}_{}_{}.png'.format(self.iter_step, i, idx)),
+        #                    normal_img[..., i])
+
+    def validate_mesh(self, world_space=False, resolution=512, threshold=0.0):
+
         bound_min = torch.tensor(self.dataset.object_bbox_min, dtype=torch.float32)
         bound_max = torch.tensor(self.dataset.object_bbox_max, dtype=torch.float32)
         os.makedirs(os.path.join(self.base_exp_dir, 'meshes'), exist_ok=True)
@@ -440,7 +447,7 @@ class Runner:
             self.renderer.extract_geometry(bound_min, bound_max, resolution=resolution, threshold=threshold,
                 query_func=lambda pts: -self.renderer.sdf_network.sdf(pts))
         vertices, triangles = remove_nan_from_mesh(vertices, triangles)
-        
+
         if len(vertices) > 0:
             if world_space:
                 vertices = vertices * self.dataset.scale_mats_np[0][0, 0] + self.dataset.scale_mats_np[0][:3, 3][None]
@@ -474,8 +481,10 @@ if __name__ == '__main__':
 
     if args.mode == 'train':
         runner.train()
+        runner.validate_mesh(world_space=args.is_world_space, resolution=args.res, threshold=args.mcube_threshold)
     elif args.mode == 'validate_mesh':
         runner.validate_mesh(world_space=args.is_world_space, resolution=args.res, threshold=args.mcube_threshold)
     elif args.mode == 'validate_image':
-        for idx in range(100,200):
+        for idx in range(200):
+        # for idx in np.arange(199, 50, -1):
             runner.validate_image(idx=idx, resolution_level=1)

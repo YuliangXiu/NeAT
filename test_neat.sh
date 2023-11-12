@@ -29,7 +29,7 @@ done
 # CUDA_VISIBLE_DEVICES=${GPU} python exp_runner.py --mode validate_mesh --conf ./confs/womask.conf \
 # --case ${CASE} --is_continue --res 512
 
-CUDA_VISIBLE_DEVICES=${GPU} python exp_runner.py --mode validate_image --conf ./confs/wmask.conf \
+CUDA_VISIBLE_DEVICES=${GPU} python exp_runner.py --mode validate_mesh --conf ./confs/wmask.conf \
 --case ${CASE} --is_continue --res 512
-# CUDA_VISIBLE_DEVICES=${GPU} python exp_runner.py --mode validate_mesh --conf ./confs/wmask.conf \
+# CUDA_VISIBLE_DEVICES=${GPU} python exp_runner.py --mode validate_image --conf ./confs/wmask.conf \
 # --case ${CASE} --is_continue --res 512
